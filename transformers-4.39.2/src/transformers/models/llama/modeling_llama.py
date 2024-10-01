@@ -887,6 +887,20 @@ LLAMA_ATTENTION_CLASSES = {
     "sdpa": LlamaSdpaAttention,
 }
 
+class BiLlamaAttention(LlamaAttention):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.is_causal = False
+
+class BiLlamaFlashAttention2(LlamaFlashAttention2):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.is_causal = False
+
+class BiLlamaSdpaAttention(LlamaSdpaAttention):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.is_causal = False
 
 
 class LlamaDecoderLayer(nn.Module):
@@ -962,6 +976,15 @@ class LlamaDecoderLayer(nn.Module):
             outputs += (present_key_value,)
 
         return outputs
+
+
+class LlamaEncoderLayer(LlamaDecoderLayer):
+    def __init__(self, config: LlamaConfig, layer_idx: int):
+        super().__init__(config, layer_idx)
+        if config._attn_implementation == "flash_attention_2":
+            self.self_attn = BiLlamaFlashAttention2(config=config, layer_idx=layer_idx)
+        else:
+            self.self_attn = LlamaSdpaAttention(config=config, layer_idx=layer_idx)
 
 
 class LlamaConAttLWDecoderLayer(nn.Module):
@@ -1058,7 +1081,7 @@ class LlamaCrossAttLWDecoderLayer(nn.Module):
         super().__init__()
         self.hidden_size = config.hidden_size
 
-        self.self_attn = LlamaAttention(config=config, layer_idx=layer_idx)
+        self.self_attn = LlamaSdpaAttention(config=config, layer_idx=layer_idx)
         self.cross_attn = LlamaCrossAttention(config=config, layer_idx=layer_idx)
 
         self.mlp = LlamaMLP(config)
@@ -1157,7 +1180,7 @@ class LlamaParallelCrossAttLWDecoderLayer(nn.Module):
         super().__init__()
         self.hidden_size = config.hidden_size
 
-        self.self_attn = LlamaAttention(config=config, layer_idx=layer_idx)
+        self.self_attn = BiLlamaFlashAttention2(config=config, layer_idx=layer_idx)
         self.cross_attn = LlamaCrossAttention(config=config, layer_idx=layer_idx)
 
         self.mlp = LlamaMLP(config)
@@ -1398,15 +1421,22 @@ class LlamaModel(LlamaPreTrainedModel):
         config: LlamaConfig
     """
 
-    def __init__(self, config: LlamaConfig):
+    def __init__(self, config: LlamaConfig, is_causal=True):
         super().__init__(config)
         self.padding_idx = config.pad_token_id
         self.vocab_size = config.vocab_size
 
         self.embed_tokens = nn.Embedding(config.vocab_size, config.hidden_size, self.padding_idx)
-        self.layers = nn.ModuleList(
-            [LlamaDecoderLayer(config, layer_idx) for layer_idx in range(config.num_hidden_layers)]
-        )
+        
+        if is_causal:
+            self.layers = nn.ModuleList(
+                [LlamaDecoderLayer(config, layer_idx) for layer_idx in range(config.num_hidden_layers)]
+            )
+        else:
+            self.layers = nn.ModuleList(
+                [LlamaEncoderLayer(config, layer_idx) for layer_idx in range(config.num_hidden_layers)]
+            )
+        print(config._attn_implementation)
         self.norm = LlamaRMSNorm(config.hidden_size, eps=config.rms_norm_eps)
         self.gradient_checkpointing = False
 
@@ -1609,7 +1639,7 @@ class LlamaModelEncoder(LlamaModel):
 ## decoder-only as Encoder with bidirectional attention
 class LlamaModelBiAttEncoder(LlamaModel):
     def __init__(self, config: LlamaConfig):
-        super().__init__(config)
+        super().__init__(config, is_causal=False)
 
     def _update_causal_mask(self, attention_mask, input_tensor, cache_position, past_seen_tokens):
         if self.config._attn_implementation == "flash_attention_2":
@@ -1976,11 +2006,15 @@ class GroupedEncoderFusion(nn.Module):
         hidden_states: List of tensors, each tensor is of shape (batch_size, seq_length, hidden_size)
                        表示编码器的各层输出
         """
-        hidden_stack = torch.stack(hidden_states, dim=0)  # Shape: [num_layers, batch_size, seq_length, hidden_size]
-
+        # hidden_stack = torch.stack(hidden_states, dim=0)  # Shape: [num_layers, batch_size, seq_length, hidden_size]
         # 选取每组的最后一层
-        last_layers = hidden_stack[self.group_size-1::self.group_size]  # Shape: [num_groups, batch_size, seq_length, hidden_size]
+        # last_layers = hidden_stack[self.group_size-1::self.group_size]  # Shape: [num_groups, batch_size, seq_length, hidden_size]
 
+        last_layers = []
+        for i in range(self.group_size - 1, len(hidden_states), self.group_size):
+            last_layers.append(hidden_states[i])
+        last_layers = torch.stack(last_layers, dim=0)
+       
         # 使用 sigmoid 激活函数获取权重，并进行广播乘法
         normalized_weights = torch.sigmoid(self.weights)  # Shape: [num_groups, 1, 1]
         weighted_sum = torch.sum(last_layers * normalized_weights, dim=0) / self.num_groups # Shape: [batch_size, seq_length, hidden_size]
@@ -2034,50 +2068,6 @@ class LlamaModelCombineEncoder(LlamaModelEncoder):
             input_ids=input_ids,
             attention_mask=attention_mask,
         )
-        hidden_states = connector_outputs.last_hidden_state
-
-        return BaseModelOutputWithPast(
-            last_hidden_state=hidden_states,
-            past_key_values=None,
-            hidden_states=[hidden_states], # for compatible other's decoder
-            attentions=None,
-        )
-
-
-## for sft
-class LlamaModelCombineEncoderBiLLM(LlamaModelBiAttEncoder):
-    def __init__(self, config: LlamaConfig):
-        super().__init__(config)
-        self.connetor = Connector(config)
-    
-    @add_start_docstrings_to_model_forward(LLAMA_INPUTS_DOCSTRING)
-    def forward(
-        self,
-        input_ids: torch.LongTensor = None,
-        attention_mask: Optional[torch.Tensor] = None,
-        position_ids: Optional[torch.LongTensor] = None,
-        past_key_values: Optional[List[torch.FloatTensor]] = None,
-        inputs_embeds: Optional[torch.FloatTensor] = None,
-        use_cache: Optional[bool] = None,
-        output_attentions: Optional[bool] = None,
-        output_hidden_states: Optional[bool] = None,
-        return_dict: Optional[bool] = None,
-        cache_position: Optional[torch.LongTensor] = None,
-    ) -> Union[Tuple, BaseModelOutputWithPast]:
-        
-        encoder_outputs = super().forward(
-            input_ids=input_ids,
-            attention_mask=attention_mask,
-            inputs_embeds=inputs_embeds,
-            use_cache=False,
-            output_attentions=output_attentions,
-            output_hidden_states=False,
-            return_dict=return_dict,
-        )
-
-        last_hidden_state = encoder_outputs.last_hidden_state
-        
-        connector_outputs = self.connetor(last_hidden_state)
         hidden_states = connector_outputs.last_hidden_state
 
         return BaseModelOutputWithPast(
@@ -2544,6 +2534,7 @@ class LlamaConAttT2BDecoder(LlamaPreTrainedModel):
                 causal_mask = AttentionMaskConverter._unmask_unattended(causal_mask, min_dtype)
 
         return causal_mask
+
 
 class LlamaConAttT2BPrefixDecoder(LlamaConAttT2BDecoder):
     def __init__(self, config):
@@ -3341,7 +3332,6 @@ class LlamaForEncDec(LlamaPreTrainedModel):
 
     def __init__(self, config):
         super().__init__(config)
-        
         encoder_method = getattr(config, "encoder_method", "causal")
         
         ## encoder
@@ -3354,8 +3344,6 @@ class LlamaForEncDec(LlamaPreTrainedModel):
         elif encoder_method in ["stack", "cross_atten", "project"]: 
             print("Using combined LLM Encoder!")
             self.encoder = LlamaModelCombineEncoder(config)
-        elif encoder_method == "stack_bi": # for tinydecoder, bidirectional LLM
-            self.encoder = LlamaModelCombineEncoderBiLLM(config)
         self.lm_head = None
 
         ## decoder

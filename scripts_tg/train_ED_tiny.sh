@@ -19,8 +19,8 @@ run_mode="init"
 model_method="TinyCrossAttLW"
 encoder_method="stack"
 # encoder_method="project"
-encoder_layer_num=2
-decoder_layer_num=8
+encoder_layer_num=8
+decoder_layer_num=4
 decoder_hidden_size=1024
 decoder_intermediate_size=2752
 decoder_num_attention_heads=16
@@ -35,7 +35,9 @@ language_pairs=de-en,en-de,cs-en,en-cs,ru-en,en-ru,zh-en,en-zh
 mmt_data_path=/mnt/luoyingfeng/llm4nmt/data/wmt23-sample10M
 # mmt_data_path=/mnt/luoyingfeng/llm4nmt/data/wmt23-sample5M
 trans_task="general_trans"
-epoch=3
+epoch=1
+batch_size=32 
+gradient_accumulation=5
 
 ## save
 output_dir=$ROOT_DIR/exps/$model_name/$tag
@@ -76,9 +78,9 @@ accelerate launch --config_file $config_file $ROOT_DIR/src/run_translation.py \
     --output_dir  $output_dir \
     --num_train_epochs $epoch \
     --patience 3 \
-    --per_device_train_batch_size 32 \
-    --per_device_eval_batch_size 32 \
-    --gradient_accumulation_steps 16 \
+    --per_device_train_batch_size $batch_size \
+    --per_device_eval_batch_size $batch_size \
+    --gradient_accumulation_steps $gradient_accumulation \
     --predict_with_generate \
     --num_beams 5 \
     --max_new_tokens 256 \

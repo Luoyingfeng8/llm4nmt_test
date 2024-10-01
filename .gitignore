@@ -5,3 +5,6 @@ exps/*
 transformers-4.38.1
 transformers-4.43.2
 scripts_hg
+
+*.pyc
+__pycache__/

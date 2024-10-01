@@ -619,7 +619,7 @@ def set_tokenizer_special_tokens(tokenizer, model_name_or_path):
         tokenizer.pad_token = "#$"
         tokenizer.eos_token = "<|endoftext|>"
         tokenizer.bos_token = "<|endoftext|>"
-    elif "Qwen1.5" in model_name_or_path:
+    elif "Qwen1.5" in model_name_or_path or "Qwen2" in model_name_or_path:
         tokenizer.pad_token_id = 151644
         tokenizer.bos_token_id = 151643
         tokenizer.eos_token_id = 151643
@@ -785,7 +785,7 @@ def train_lora_model(model, model_args, config):
 
 def do_data_reverse(pairs, examples, i):
     direc_tasks = ["ape", "context_aware_trans"]
-    direc_data_names = ["wmt19_robustness", "wmt20_robustness","IdiomsInCtx-MT","PETCI"]
+    direc_data_names = ["wmt19_robustness", "wmt20_robustness", "IdiomsInCtx-MT","PETCI"]
     source_lang, target_lang, task_type, data_name = examples["src_lang"][i], examples["tgt_lang"][i], examples["task_type"][i],  examples["data_name"][i]
     flag = True
     if f"{target_lang}-{source_lang}" not in pairs or task_type in direc_tasks:

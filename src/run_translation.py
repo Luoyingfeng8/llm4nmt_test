@@ -403,7 +403,7 @@ def main():
         cache_dir=model_args.cache_dir,
         revision=model_args.model_revision,
         token=model_args.token,
-        trust_remote_code=model_args.trust_remote_code,
+        trust_remote_code=model_args.trust_remote_code
     )
 
     add_eos_token = True if model_args.model_method == "norm" else False
