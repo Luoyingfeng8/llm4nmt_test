@@ -40,8 +40,8 @@ for l in de cs ru zh; do
         lang_pair=${src}-$tgt
         lp=${src}2${tgt}
         hypo_file=$decode_dir/test-$lang_pair${suffix:-""}
-        src_file=$ROOT_DIR/data/wmt-test-data/${wmt_test_year}/${wmt_test_year}-${l}en/test.$lp.$src
-        ref_file=$ROOT_DIR/data/wmt-test-data/${wmt_test_year}/${wmt_test_year}-${l}en/test.$lp.$tgt	
+        src_file=$ROOT_DIR/data/wmt-test-v8.28/wmt-test-data/${wmt_test_year}/${wmt_test_year}-${l}en/test.$lp.$src
+        ref_file=$ROOT_DIR/data/wmt-test-v8.28/wmt-test-data/${wmt_test_year}/${wmt_test_year}-${l}en/test.$lp.$tgt	
         
         src_file_strs=${src_file_strs:+$src_file_strs,}$src_file
         ref_file_strs=${ref_file_strs:+$ref_file_strs,}$ref_file

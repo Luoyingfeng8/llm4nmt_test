@@ -20,18 +20,18 @@ model_method="TinyCrossAttLW"
 # encoder_method="bidirectional"
 encoder_method="stack"
 encoder_layer_num=8
-decoder_layer_num=4
+decoder_layer_num=2
 decoder_hidden_size=1024
 decoder_intermediate_size=2752
 decoder_num_attention_heads=16
 decoder_num_key_value_heads=16
 
 decoder_param_method="freeze"  # no use
-tag=stack_L8_D1024_m2m_s2
+tag=${encoder_method}_E${encoder_layer_num}_D${decoder_layer_num}_d${decoder_hidden_size}_m2m_s2
 
 # language_pairs=de-en,cs-en,ru-en,zh-en
 language_pairs=de-en,en-de,cs-en,en-cs,ru-en,en-ru,zh-en,en-zh
-mmt_data_path=$ROOT_DIR/data/v8.28
+mmt_data_path=$ROOT_DIR/data/wmt-test-v8.28/v8.28
 trans_task="general_trans,doc_trans,domain_medical,domain_law,domain_finance,domain_computer,domain_literature,domain_social_media,term_con_trans,ape,context_aware_trans,context_learning_trans"
 
 

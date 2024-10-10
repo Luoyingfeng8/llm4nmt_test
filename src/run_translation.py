@@ -560,6 +560,10 @@ def main():
             state_dict = utils.make_model_state_dict(model_path=model_args.model_name_or_path, config=config, model_method=model_args.model_method)
             model = LlamaCrossAttentionEncDec.from_pretrained(None, config=config, state_dict=state_dict, ignore_mismatched_sizes=True)
             model.set_share_paremeters()
+            # for n,p in model.named_parameters():
+            #     print(n, p.dtype)
+            # exit()
+            model.encoder.layers.to(dtype=torch.float16)
         ## init decoder from existing llm and train the decoder's cross attention only
         elif model_args.run_mode == "combine_stage1":
             decoder_config = AutoConfig.from_pretrained(model_args.decoder_model_name_or_path).to_dict()

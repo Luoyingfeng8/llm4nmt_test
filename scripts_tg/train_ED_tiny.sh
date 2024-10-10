@@ -20,7 +20,7 @@ model_method="TinyCrossAttLW"
 encoder_method="stack"
 # encoder_method="project"
 encoder_layer_num=8
-decoder_layer_num=4
+decoder_layer_num=2
 decoder_hidden_size=1024
 decoder_intermediate_size=2752
 decoder_num_attention_heads=16
@@ -32,12 +32,12 @@ tag=${encoder_method}_E${encoder_layer_num}_D${decoder_layer_num}_d${decoder_hid
 ## data
 # language_pairs=de-en,en-de,zh-en,en-zh
 language_pairs=de-en,en-de,cs-en,en-cs,ru-en,en-ru,zh-en,en-zh
-mmt_data_path=/mnt/luoyingfeng/llm4nmt/data/wmt23-sample10M
+mmt_data_path=$ROOT_DIR/data/wmt23-sample/wmt23-sample10M
 # mmt_data_path=/mnt/luoyingfeng/llm4nmt/data/wmt23-sample5M
 trans_task="general_trans"
 epoch=1
 batch_size=32 
-gradient_accumulation=5
+gradient_accumulation=10
 
 ## save
 output_dir=$ROOT_DIR/exps/$model_name/$tag
@@ -72,7 +72,7 @@ accelerate launch --config_file $config_file $ROOT_DIR/src/run_translation.py \
     --load_best_model_at_end  \
     --cache_dir ./cache \
     --dataloader_num_workers 8 \
-    --preprocessing_num_workers 16 \
+    --preprocessing_num_workers 8 \
     --max_source_length 256 \
     --max_target_length 256 \
     --output_dir  $output_dir \
