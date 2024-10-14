@@ -11,10 +11,8 @@ config_file=./configs/accelerate_config_8gpu.yaml
 
 language_pairs=de-en,en-de,cs-en,en-cs,ru-en,en-ru,zh-en,en-zh
 # language_pairs=de-en,cs-en,ru-en,zh-en
-# language_pairs=de-en
-# language_pairs=en-de
 
-mmt_data_path=$$ROOT_DIR/data/v8.28
+mmt_data_path=$ROOT_DIR/data/wmt-test-v8.28/v8.28
 trans_task="general_trans"
 
 eval_models=(
