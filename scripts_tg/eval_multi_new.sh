@@ -8,7 +8,6 @@ export HF_EVALUATE_OFFLINE=1
 export HF_DATASETS_OFFLINE=1
 
 
-
 decode_dir=${1:-"/mnt/luoyingfeng/llm4nmt/exps/TowerInstruct-13B-v0.2/wmt23"}
 wmt_test_year=wmt23
 suffix=-general_trans-$wmt_test_year
