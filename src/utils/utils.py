@@ -409,16 +409,15 @@ def load_mmt_dataset(pairs, trans_task, data_args, model_args, training_args, lo
             # test_file may have multi test dataset
             if task == "general_trans":
                 if data_args.test_dataname == "wmt23":
-                    test_files = glob.glob(os.path.join(data_args.mmt_data_path, pair_dir, f"test.{src_lang}-{tgt_lang}.{task}.wmt23*"))
+                    test_files = glob.glob(os.path.join(data_args.mmt_data_path, pair_dir, f"test.{src_lang}-{tgt_lang}.{task}.wmt23*json"))
                 elif data_args.test_dataname == "wmt22":
-                    test_files = glob.glob(os.path.join(data_args.mmt_data_path, pair_dir, f"test.{src_lang}-{tgt_lang}.{task}.wmt22*"))
+                    test_files = glob.glob(os.path.join(data_args.mmt_data_path, pair_dir, f"test.{src_lang}-{tgt_lang}.{task}.wmt22*json"))
                 elif data_args.test_dataname == "flores":
-                    test_files = glob.glob(os.path.join(data_args.mmt_data_path, pair_dir, f"test.{src_lang}-{tgt_lang}.{task}.FLORES-200*"))
+                    test_files = glob.glob(os.path.join(data_args.mmt_data_path, pair_dir, f"test.{src_lang}-{tgt_lang}.{task}.FLORES-200*json"))
                 else:
-                    print(11111111111111111)
-                    test_files = glob.glob(os.path.join(data_args.mmt_data_path, pair_dir, f"test.{src_lang}-{tgt_lang}.{task}*"))
+                    test_files = glob.glob(os.path.join(data_args.mmt_data_path, pair_dir, f"test.{src_lang}-{tgt_lang}.{task}*json"))
             else:
-                test_files = glob.glob(os.path.join(data_args.mmt_data_path, pair_dir, f"test.{src_lang}-{tgt_lang}.{task}*"))
+                test_files = glob.glob(os.path.join(data_args.mmt_data_path, pair_dir, f"test.{src_lang}-{tgt_lang}.{task}*json"))
 
             if test_files:
                 test_file = test_files[0]
