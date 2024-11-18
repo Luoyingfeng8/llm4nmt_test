@@ -1,60 +1,47 @@
-#!/usr/bin/env python
 # coding=utf-8
 
 import logging
-import copy
-import math
 import os
 import sys
 import json
 from dataclasses import dataclass, field
-from itertools import chain
 from typing import Optional
 import numpy as np
-import time
 
 import datasets
-import evaluate
 import torch
 from datasets import load_dataset
 
 import transformers
 from transformers import (
-    CONFIG_MAPPING,
     MODEL_FOR_CAUSAL_LM_MAPPING,
-    AutoConfig,
-    AutoModelForCausalLM,
-    AutoTokenizer,
     HfArgumentParser,
-    Trainer,
-    TrainingArguments,
     Seq2SeqTrainingArguments,
     default_data_collator,
-    is_torch_tpu_available,
     set_seed,
-    LlamaTokenizer,
     EarlyStoppingCallback
 )
-from transformers.testing_utils import CaptureLogger
-from transformers.trainer_utils import get_last_checkpoint
-from transformers.utils import check_min_version, send_example_telemetry
+
 from transformers.utils.versions import require_version
-from peft import LoraConfig, get_peft_model, prepare_model_for_kbit_training, TaskType
-from peft import PeftModel, PeftConfig
-from collections import defaultdict
-from transformers.trainer_callback import TrainerCallback
-from datasets import concatenate_datasets, interleave_datasets
+
+from datasets import  interleave_datasets
 from utils.trainer_llmmt import LlmmtTrainer
-from utils.utils import LANG_TABLE, load_mmt_dataset, get_preprocessed_data, clean_outputstring, load_a_single_text_file, load_tokenizer, load_model, SavePeftModelCallback, get_key_suffix
-from utils.ul2collator import DataCollatorForUL2
+from utils.utils import (
+    load_mmt_dataset, 
+    process_mmt_data_for_llm, 
+    clean_outputstring, 
+    load_a_single_text_file, 
+    load_tokenizer, 
+    load_model, 
+    SavePeftModelCallback, 
+    get_key_suffix
+)
+from utils.ul2collator import DataCollatorForUL2, DataCollatorForCausalLM, DataCollatorForPrefixLM
 
 from transformers import MODEL_FOR_CAUSAL_LM_MAPPING
 
 logger = logging.getLogger(__name__)
 
-from peft import get_peft_config, get_peft_model, LoraConfig, TaskType
-
-from transformers.trainer_utils import PREFIX_CHECKPOINT_DIR
 
 MODEL_CONFIG_CLASSES = list(MODEL_FOR_CAUSAL_LM_MAPPING.keys())
 MODEL_TYPES = tuple(conf.model_type for conf in MODEL_CONFIG_CLASSES)
@@ -365,6 +352,9 @@ class DataTrainingArguments:
     trans_task: str = field(
         default="general_trans"
     )
+    predict_task: str = field(
+        default="general_trans"
+    )
     test_dataname: str = field(
         default="wmt23"
     )
@@ -418,6 +408,13 @@ def main():
     )
     logger.info(f"Training/evaluation parameters {training_args}")
 
+    # load and set special token id of tokenizer
+    tokenizer = load_tokenizer(data_args, model_args, training_args, logger)
+     # Load model
+    model = load_model(data_args, model_args, training_args, tokenizer, logger)
+    print(model)
+    # exit()
+
     # Get the datasets
     pairs = set(data_args.language_pairs.split(","))
     trans_task = data_args.trans_task.split(",")
@@ -428,6 +425,7 @@ def main():
         test_raw_data = load_a_single_text_file(pairs, data_args, model_args)
     elif data_args.mmt_data_path:
         train_raw_data, valid_raw_data, test_raw_data = load_mmt_dataset(pairs, trans_task, data_args, model_args, training_args, logger)
+        train_datasets, eval_datasets, test_datasets = process_mmt_data_for_llm(train_raw_data, valid_raw_data, test_raw_data, pairs, tokenizer, data_args, training_args)
 
     if data_args.mono_data_path:
         train_raw_data = load_dataset(
@@ -461,30 +459,16 @@ def main():
     # load tokenizer
     set_seed(training_args.seed)
     
-    # load and set special token id of tokenizer
-    tokenizer = load_tokenizer(data_args, model_args, training_args, logger)
-
     if data_args.use_ul2:
         assert data_args.use_prefix_lm, "Must enable use prefix language model"
 
-    shots_eval_dict = {}
-    if data_args.few_shot_eval_path:
-        for lg_pair in test_raw_data.keys():
-            pair_shot_path = os.path.join(data_args.few_shot_eval_path, f"shots.{lg_pair}.json")
-            if not os.path.isfile(pair_shot_path):
-                ValueError(f"Make sure the language pair {lg_pair} is in the few shot eval folder!")
-            with open(pair_shot_path) as f:
-                shots_eval_dict[lg_pair] = json.load(f)
- 
-    train_datasets, eval_datasets, test_datasets = get_preprocessed_data(train_raw_data, valid_raw_data, test_raw_data, pairs, tokenizer, shots_eval_dict, data_args, training_args, model_args)
-    # metric = evaluate.load("sacrebleu")
-    # exit()
-    # print(train_datasets, eval_datasets, test_datasets)
-
-    # Load model
-    model = load_model(data_args, model_args, training_args, tokenizer, logger)
-
-    collate_fn = DataCollatorForUL2(model, tokenizer) if data_args.use_ul2 else default_data_collator
+    if data_args.use_ul2:
+        collate_fn = DataCollatorForUL2(model, tokenizer)
+    elif data_args.use_prefix_lm:
+        collate_fn = DataCollatorForPrefixLM(tokenizer, model=model)
+    else:
+        # collate_fn = default_data_collator
+        collate_fn = DataCollatorForCausalLM(tokenizer, model=model, pad_to_multiple_of=8 if training_args.fp16 else None )
     
     # Initialize our Trainer
     trainer = LlmmtTrainer(
@@ -510,23 +494,23 @@ def main():
             model.save_pretrained(training_args.output_dir) 
         else:
             trainer.save_model()  # Saves the tokenizer too for easy upload
+    
     # Prediction
+    predict_tasks = data_args.predict_task.split(",")
     if training_args.do_predict:
         trainer.args.prediction_loss_only = False
         lg_pairs = sorted(test_datasets.keys()) # make sure each device print in the same order
         for lg_pair in lg_pairs:
-            test_dataset = test_datasets[lg_pair]
+            cur_test_dataset = test_datasets[lg_pair]
             src_lang, tgt_lang = lg_pair.split("-")
-            for task in trans_task:
-                if task not in test_dataset:
+            for task in cur_test_dataset.keys():
+                if task not in predict_tasks:
+                    logger.info(f"skip predict {lg_pair}.{task}")
                     continue
-                 # only predict general trans
-                if task != "general_trans":
-                    continue
+                task_test_dataset = cur_test_dataset[task]
                 logger.info(f"*** Prediction for {lg_pair}.{task} ***")
-                
                 preds, _, _ = trainer.predict(
-                    test_dataset=test_dataset[task], 
+                    test_dataset=task_test_dataset, 
                     max_new_tokens=data_args.max_new_tokens, 
                     num_beams=data_args.num_beams, 
                     metric_key_prefix="test",
@@ -552,13 +536,12 @@ def main():
                         predic_file_name += f"-{data_args.test_dataname}"
                     output_prediction_file = os.path.join(decode_dir, predic_file_name)
                     with open(output_prediction_file, "w", encoding="utf-8") as f:
-                        suffix = get_key_suffix(tgt_lang, data_args)
-                        if len(shots_eval_dict) != 0:
-                            split_idx = len(shots_eval_dict[lg_pair]) + 1
+                        if task != "ape":
+                            suffix = get_key_suffix(tgt_lang, data_args)
                         else:
-                            split_idx = 1
+                            suffix = "Improved translation: "
                         for pred in decoded_preds:
-                            pred = clean_outputstring(pred, suffix, logger, split_idx)
+                            pred = clean_outputstring(pred, suffix, logger, split_idx=1)
                             f.writelines([pred, "\n"])
 
 

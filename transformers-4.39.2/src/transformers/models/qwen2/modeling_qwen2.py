@@ -932,6 +932,8 @@ class Qwen2Model(Qwen2PreTrainedModel):
             [Qwen2DecoderLayer(config, layer_idx) for layer_idx in range(config.num_hidden_layers)]
         )
         self._attn_implementation = config._attn_implementation
+        # self._attn_implementation = "eager"
+
         self.norm = Qwen2RMSNorm(config.hidden_size, eps=config.rms_norm_eps)
 
         self.gradient_checkpointing = False
@@ -1002,6 +1004,8 @@ class Qwen2Model(Qwen2PreTrainedModel):
         if inputs_embeds is None:
             inputs_embeds = self.embed_tokens(input_ids)
 
+        # print(attention_mask, attention_mask.size())
+
         if attention_mask is not None and self._attn_implementation == "flash_attention_2" and use_cache:
             is_padding_right = attention_mask[:, -1].sum().item() != batch_size
             if is_padding_right:
@@ -1032,6 +1036,9 @@ class Qwen2Model(Qwen2PreTrainedModel):
                 past_key_values_length,
                 sliding_window=self.config.sliding_window,
             )
+
+        # print(attention_mask, attention_mask.size())
+        # exit()
 
         hidden_states = inputs_embeds
 

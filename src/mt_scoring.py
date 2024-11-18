@@ -25,19 +25,19 @@ def bleu_scoring(ref_file, hypo_file, lp):
 
 
 def comet22_scoring(src_file, ref_file, hypo_file, model):
-    srcs = open(src_file).read().strip().split("\n")
-    refs = open(ref_file).read().strip().split("\n")
-    hypos = open(hypo_file).read().strip().split("\n")
-    assert len(srcs) == len(refs) == len(hypos)
+    srcs = [x.strip() for x in  open(src_file, encoding='utf-8')]
+    refs = [x.strip() for x in  open(ref_file, encoding='utf-8')]
+    hypos = [x.strip() for x in  open(hypo_file, encoding='utf-8')] 
+    assert len(srcs) == len(refs) == len(hypos), print(src_file, ref_file, hypo_file)
     data = [{"src":x, "mt":y, "ref":z} for x,y,z in zip(srcs, hypos, refs)]
-    print(f"comet22\nsrc_file: {src_file}\nhypo_file: {hypo_file}")
+    print(f"comet22\nsrc_file: {src_file}\nref_file: {ref_file}\nhypo_file: {hypo_file}")
     model_output = model.predict(data, batch_size=64, gpus=1)
     score = round(model_output[1]*100, 2)
     return score
 
 def xcomet_scoring(src_file, hypo_file, model):
-    srcs = open(src_file).read().strip().split("\n")
-    hypos = open(hypo_file).read().strip().split("\n")
+    srcs = [x.strip() for x in  open(src_file, encoding='utf-8') if x.strip()]
+    hypos = [x.strip() for x in  open(hypo_file, encoding='utf-8') if x.strip()] 
     assert len(srcs) == len(hypos)
     data = [{"src":x, "mt":y} for x,y in zip(srcs, hypos)]
     print(f"xcomet\nsrc_file: {src_file}\nhypo_file: {hypo_file}")
@@ -59,8 +59,8 @@ def write_xlsl(file, data, flag=""):
         row_index += 1
     
     current_time = datetime.datetime.now()
-    ws[f'A{row_index}'] = f"{current_time.strftime('%Y-%m-%d %H:%M:%S')}"
-    ws[f'K{row_index}'] = flag
+    ws[f'A{row_index}'] = f"{current_time.strftime('%Y-%m-%d %H:%M:%S')}\n{flag}"
+    # ws[f'B{row_index}'] = flag
 
     headers = list(data.keys())
     for col_index, header in enumerate(headers, start=1):
@@ -70,7 +70,12 @@ def write_xlsl(file, data, flag=""):
     for i in range(max_length):
         row_index += 1
         for col_index, (key, values) in enumerate(data.items(), start=1):
-            ws[f'{get_column_letter(col_index)}{row_index + 1}'] = values[i]
+            try:
+                ws[f'{get_column_letter(col_index)}{row_index + 1}'] = values[i]
+            except:
+                print(data)
+                print(flag)
+                print(values, max_length)
 
     wb.save(file)
 
@@ -89,6 +94,7 @@ def main():
     parser.add_argument('--xcomet_xl_path', type=str, help='The xcomet xl path model')
     parser.add_argument('--xcomet_xxl_path', type=str, help='The xcomet xxl path model')
     parser.add_argument('--lang_pair', type=str, help='plain text')
+    parser.add_argument('--write_key', type=str, default="language", help='plain text')
     parser.add_argument('--src_file', type=str, help='plain text')
     parser.add_argument('--ref_file', type=str, help='plain text')
     parser.add_argument('--hypo_file', type=str, help='plain text')
@@ -118,23 +124,35 @@ def main():
     result["metric"] = metrics
     for metric in metrics:
         for lp,src_file,ref_file, hypo_file in zip(lang_pairs, src_files, ref_files, hypo_files):
+            if not os.path.isfile(src_file):
+                print(f"file {src_file} not exist!")
+                exit()
+            if not os.path.isfile(ref_file):
+                print(f"file {ref_file} not exist!")
+                exit()
             print(f"evaluate {lp}")
-            
+
+            if args.write_key == "language":
+                wk = lp
+            else:
+                # hypo suffix
+                wk = os.path.basename(hypo_file)
+
             if metric == "bleu":
                 score = bleu_scoring(ref_file, hypo_file, lp)
-                result[lp].append(score)        
+                result[wk].append(score)        
             
             if metric == "comet_22":
                 score = comet22_scoring(src_file, ref_file, hypo_file, comet_22_model)
-                result[lp].append(score)
+                result[wk].append(score)
             
             if metric == "xcomet_xl":
                 score = xcomet_scoring(src_file, hypo_file, comet_xl_model)
-                result[lp].append(score)
+                result[wk].append(score)
             
             if metric == "xcomet_xxl":
                 score = xcomet_scoring(src_file, hypo_file, comet_xxl_model)
-                result[lp].append(score)
+                result[wk].append(score)
     write_xlsl(args.record_file, result, flag=hypo_files[-1])
 
 

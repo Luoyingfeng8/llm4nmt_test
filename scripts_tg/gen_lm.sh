@@ -11,7 +11,7 @@ eval_file=./eval_result.txt
 config_file=./configs/accelerate_config.yaml
 
 # language_pairs=de-en,en-de,cs-en,en-cs,ru-en,en-ru,zh-en,en-zh
-language_pairs=de-en,cs-en,ru-en,zh-en
+language_pairs=zh-en
 # trans_task="doc_trans,domain_medical,domain_law,domain_academic,domain_social_media,domain_xml,term_con_trans,ape,context_aware_trans,context_learning_trans"
 trans_task=general_trans
 # ref_file=/media/luoyf/data_card/iwslt14-deen/test.$tgt

@@ -518,3 +518,97 @@ class DataCollatorForS2SBottomConcat:
             "labels":  torch.tensor(np.array(labels).astype(np.int64)),
         }
         return features
+    
+@dataclass
+class DataCollatorForCausalLM:
+    tokenizer: PreTrainedTokenizerBase
+    model: Optional[Any] = None
+    padding: Union[bool, str, PaddingStrategy] = True
+    max_length: Optional[int] = None
+    pad_to_multiple_of: Optional[int] = None
+    label_pad_token_id: int = -100
+    return_tensors: str = "pt"
+
+    def __call__(self, features, return_tensors=None):
+        if return_tensors is None:
+            return_tensors = self.return_tensors
+        labels = [feature["labels"] for feature in features] if "labels" in features[0].keys() else None
+        input_ids = [feature["input_ids"] for feature in features]
+        # We have to pad the labels before calling `tokenizer.pad` as this method won't pad them and needs them of the
+        # same length to return tensors.
+
+        ## padding input_ids and labels with left side and get attention_mask
+        max_length = max(len(l) for l in input_ids)
+        if self.pad_to_multiple_of:
+            max_length = (
+                        (max_length + self.pad_to_multiple_of - 1)
+                        // self.pad_to_multiple_of
+                        * self.pad_to_multiple_of
+            )
+        input_ids = [[self.tokenizer.pad_token_id]*(max_length-len(ids)) + ids for ids in input_ids]
+        labels = [[-100]*(max_length-len(ids)) + ids for ids in labels] if labels is not None else None
+        attention_mask = [[0 if x == self.tokenizer.pad_token_id else 1 for x in y] for y in input_ids]
+
+        features = {
+            "input_ids": torch.tensor(np.array(input_ids).astype(np.int64)),
+            "attention_mask":  torch.tensor(np.array(attention_mask).astype(np.int64)),
+        }
+        if labels is not None:
+            features["labels"] = torch.tensor(np.array(labels).astype(np.int64)) 
+
+        # print(input_ids)
+        # print(attention_mask)
+        # print(labels)
+
+        return features
+    
+@dataclass
+class DataCollatorForPrefixLM:
+    tokenizer: PreTrainedTokenizerBase
+    model: Optional[Any] = None
+    padding: Union[bool, str, PaddingStrategy] = True
+    max_length: Optional[int] = None
+    label_pad_token_id: int = -100
+    return_tensors: str = "pt"
+
+    def __call__(self, features, return_tensors=None):
+        if return_tensors is None:
+            return_tensors = self.return_tensors
+        labels = [feature["labels"] for feature in features] if "labels" in features[0].keys() else None
+        input_ids = [feature["input_ids"] for feature in features]
+
+        if labels:
+            s_lens = [x.count(-100) for x in labels]
+            t_lens = [len(x)-x.count(-100) for x in labels]
+            max_s, max_t = max(s_lens), max(t_lens)
+
+            ## left padding source part
+            input_ids = [[self.tokenizer.pad_token_id]*(max_s-s_len) + ids for s_len, ids in zip(s_lens, input_ids)]
+            labels = [[-100]*(max_s-s_len) + ids for s_len, ids in zip(s_lens, labels)]
+            
+            ## right padding target part
+            input_ids = [ids + [self.tokenizer.pad_token_id]*(max_t-t_len) for t_len, ids in zip(t_lens, input_ids)]
+            labels = [ids + [-100]*(max_t-t_len) for t_len, ids in zip(t_lens, labels)]
+            prefix_len = max_s
+        else:
+            max_length = max(len(x) for x in input_ids)
+            input_ids = [[self.tokenizer.pad_token_id]*(max_length-len(ids)) + ids for ids in input_ids]
+            prefix_len = max_length
+
+        attention_mask = [[0 if x == self.tokenizer.pad_token_id else 1 for x in y] for y in input_ids]
+
+        features = {
+            "input_ids": torch.tensor(np.array(input_ids).astype(np.int64)),
+            "attention_mask":  torch.tensor(np.array(attention_mask).astype(np.int64)),
+            "prefix_len": prefix_len
+        }
+        if labels is not None:
+            features["labels"] = torch.tensor(np.array(labels).astype(np.int64)) 
+
+        # print(input_ids)
+        # print(attention_mask)
+        # print(prefix_len)
+        # print(labels)
+        # exit()
+
+        return features

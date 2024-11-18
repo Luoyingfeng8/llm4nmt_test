@@ -84,12 +84,15 @@ def eval_few_shot():
     args = parse_args()
     set_seed(args.seed)
     accelerator = Accelerator()
-    tokenizer = AutoTokenizer.from_pretrained(args.model_name_or_path, add_special_tokens=False, padding_side="left", trust_remote_code=True)
+    # tokenizer = AutoTokenizer.from_pretrained(args.model_name_or_path, add_special_tokens=False, padding_side="left", trust_remote_code=True)
+    tokenizer = AutoTokenizer.from_pretrained(args.model_name_or_path, padding_side="left", trust_remote_code=True)
     
     if "Llama-2" in args.model_name_or_path or "Tower" in args.model_name_or_path or "LLaMA" in args.model_name_or_path:
         tokenizer.pad_token_id = tokenizer.unk_token_id
     if "Llama-3" in args.model_name_or_path:
         tokenizer.pad_token_id = 128002
+    if "falcon" in args.model_name_or_path:
+        tokenizer.pad_token_id = 0
 
     remove_special_tokens = get_special_tokens(tokenizer)
     # torch_dtype='auto'

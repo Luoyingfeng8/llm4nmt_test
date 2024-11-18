@@ -19,6 +19,7 @@ import copy
 import os
 import re
 import pickle
+import json
 
 import torch
 from safetensors import safe_open
@@ -110,10 +111,10 @@ def test_tokenizer():
     # )
     # print(tokenizer)
     # tokenizer = AutoTokenizer.from_pretrained("/mnt/luoyingfeng/model_card/gemma-2b", padding_side='left', add_eos_token=True)
-    text1 = "在 Markdown 中插入代码块可以通过使用三个反引号 ``` 来实现，后跟编程语言的名称（可选）。代码块中的内容将会被渲染成代码格式\n"
+    text1 = "在 Markdown 中插入代码块可以通过使用三个反引号 ``` 来实现，后跟编程语言的名称（可选）。"
     # text1 = "All 8 model sizes are trained on the exact same data, in the exact same order.\n"
     text2 = "These integrations mark the first offerings we are launching together as a result of our collaborative partnership with Google. Stay tuned for more!"
-    print(tokenizer(text1))
+    print(tokenizer([text1, text2], add_special_tokens=True))
     # # print(tokenizer.encode(text1))
     # print(tokenizer.tokenize([text1, text2]))
     # print(tokenizer.convert_ids_to_tokens(tokenizer(text1)["input_ids"]))
@@ -140,23 +141,29 @@ def test_dataset():
         model_inputs["labels"] = labels["input_ids"]
         return model_inputs
     
-    tokenizer = AutoTokenizer.from_pretrained("/mnt/luoyingfeng/model_card/gemma-2b", padding_side='left', add_eos_token=True)
-    data_files = {
-        # "train": '/mnt/luoyingfeng/llm4mt/data/ro-en/temp_data/train.jsonl',
-        "validation": '/mnt/luoyingfeng/llm4mt/data/ro-en/temp_data/valid.jsonl',
-        'test': '/mnt/luoyingfeng/llm4mt/data/ro-en/temp_data/test.jsonl'
-    }
-    raw_datasets = load_dataset("json", data_files=data_files)
-    column_names = raw_datasets["validation"].column_names
+    # tokenizer = AutoTokenizer.from_pretrained("/mnt/luoyingfeng/model_card/gemma-2b", padding_side='left', add_eos_token=True)
+    # data_files = {
+    #     # "train": '/mnt/luoyingfeng/llm4mt/data/ro-en/temp_data/train.jsonl',
+    #     "validation": '/mnt/luoyingfeng/llm4mt/data/ro-en/temp_data/valid.jsonl',
+    #     'test': '/mnt/luoyingfeng/llm4mt/data/ro-en/temp_data/test.jsonl'
+    # }
+    # raw_datasets = load_dataset("json", data_files=data_files)
+    # column_names = raw_datasets["validation"].column_names
 
     # print(raw_datasets["test"]["translation"])
-    processed_datasets = raw_datasets.map(
-            preprocess_function,
-            batched=True,
-            num_proc=16,
-            remove_columns=column_names,
-        )
-    print(processed_datasets)
+    # processed_datasets = raw_datasets.map(
+    #         preprocess_function,
+    #         batched=True,
+    #         num_proc=16,
+    #         remove_columns=column_names,
+    #     )
+    # print(processed_datasets)
+
+    raw_datasets = load_dataset("json", data_files={"train":"/mnt/luoyingfeng/llm4nmt/data/v8.28/de-en/test.de-en.general_trans.wmt23.json"})
+    print(raw_datasets["train"][0])
+    # print(raw_datasets["train"]["data_name"])
+    for item in raw_datasets["train"]:
+        print(item)
 
 
 def test_encoderdecoder():
@@ -444,7 +451,7 @@ def test_qwen2_instuct():
 if __name__ == "__main__":
     # test_gemma()
     # print_model_args()
-    # test_tokenizer()
+    test_tokenizer()
     # test_dataset()
     # test_encoderdecoder()
     # test_qwen()
@@ -454,16 +461,30 @@ if __name__ == "__main__":
     # test_lora()
     # lora_model_merge()
 
-    tokenizer = AutoTokenizer.from_pretrained("/mnt/luoyingfeng/model_card/nllb-200-3.3B", use_auth_token=True, src_lang="eng_Latn")
-    model = AutoModelForSeq2SeqLM.from_pretrained("/mnt/luoyingfeng/model_card/nllb-200-3.3B", use_auth_token=True)
+    # tokenizer = AutoTokenizer.from_pretrained("/mnt/luoyingfeng/model_card/nllb-200-3.3B", use_auth_token=True, src_lang="eng_Latn")
+    # model = AutoModelForSeq2SeqLM.from_pretrained("/mnt/luoyingfeng/model_card/nllb-200-3.3B", use_auth_token=True)
 
-    article = "Police arrest 15 after violent protest outside UK refugee hotel"
-    inputs = tokenizer(article, return_tensors="pt", add_special_tokens=False)
+    # article = "Police arrest 15 after violent protest outside UK refugee hotel"
+    # inputs = tokenizer(article, return_tensors="pt", add_special_tokens=False)
 
-    translated_tokens = model.generate(
-    **inputs, forced_bos_token_id=tokenizer.lang_code_to_id["deu_Latn"], max_length=30)
-    res = tokenizer.batch_decode(translated_tokens, skip_special_tokens=True)[0]
-    print(res)
+    # translated_tokens = model.generate(
+    # **inputs, forced_bos_token_id=tokenizer.lang_code_to_id["deu_Latn"], max_length=30)
+    # res = tokenizer.batch_decode(translated_tokens, skip_special_tokens=True)[0]
+    # print(res)
+    # for model_name in ["nllb-200-3.3B"]:
+    #     url = f"/mnt/luoyingfeng/model_card/{model_name}"
+    #     # model = AutoModelForCausalLM.from_pretrained(url)
+    #     model = AutoModelForSeq2SeqLM.from_pretrained(url)
+    #     print(model_name, sum(p.numel() for p in model.parameters()))
+    #     total_params = 0
+    #     for name, param in model.named_parameters():
+    #     # 排除embedding层和lm_head层的参数
+    #         if 'embed_tokens' not in name and 'lm_head' not in name and "shared" not in name:
+    #             total_params += param.numel()
+    #         # print(name)
+    #     print(total_params)
+    # 假设数据量较大
+
 
 
 
