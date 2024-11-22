@@ -315,7 +315,7 @@ class DataTrainingArguments:
         default="general_trans"
     )
     test_dataname: str = field(
-        default="wmt23"
+        default=""
     )
 
     def __post_init__(self):

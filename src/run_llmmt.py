@@ -356,7 +356,7 @@ class DataTrainingArguments:
         default="general_trans"
     )
     test_dataname: str = field(
-        default="wmt23"
+        default=""
     )
 
 
@@ -427,6 +427,7 @@ def main():
         train_raw_data, valid_raw_data, test_raw_data = load_mmt_dataset(pairs, trans_task, data_args, model_args, training_args, logger)
         train_datasets, eval_datasets, test_datasets = process_mmt_data_for_llm(train_raw_data, valid_raw_data, test_raw_data, pairs, tokenizer, data_args, training_args)
 
+    
     if data_args.mono_data_path:
         train_raw_data = load_dataset(
             "json",
