@@ -143,14 +143,7 @@ class ModelArguments:
             )
         },
     )
-    cpo_beta: float = field(
-        default=0.1,
-        metadata={
-            "help": (
-                "Beta for CPO training"
-            )
-        },
-    )
+    
     multi_gpu_one_model: bool = field(
         default=False,
         metadata={
@@ -192,7 +185,6 @@ class DataTrainingArguments:
     )
     mmt_data_path: Optional[str] = field(default=None, metadata={"help": "The input MMT training data path."})
     override_test_data_path: Optional[str] = field(default=None, metadata={"help": "This will override the default test data in the mmt data"})
-    cpo_data_path: Optional[str] = field(default=None, metadata={"help": "The input CPO training data path."})
     mono_data_path: Optional[str] = field(default=None, metadata={"help": "The input mono data training data path."})
     oscar_data_path: Optional[str] = field(default=None, metadata={"help": "The input Oscar mono data name."})
     oscar_data_lang: Optional[str] = field(default=None, metadata={"help": "The input Oscar mono data language."})
@@ -225,32 +217,16 @@ class DataTrainingArguments:
         },
     )
     streaming: bool = field(default=False, metadata={"help": "Enable streaming mode"})
-    block_size: Optional[int] = field(
-        default=None,
-        metadata={
-            "help": (
-                "Optional input sequence length after tokenization. "
-                "The training dataset will be truncated in block of this size for training. "
-                "Default to the model max input length for single sentence inputs (take into account special tokens)."
-            )
-        },
-    )
+
     overwrite_cache: bool = field(
         default=False, metadata={"help": "Overwrite the cached training and evaluation sets"}
     )
-    validation_split_percentage: Optional[int] = field(
-        default=5,
-        metadata={
-            "help": "The percentage of the train set used as validation set in case there's no validation split"
-        },
-    )
+
     preprocessing_num_workers: Optional[int] = field(
         default=None,
         metadata={"help": "The number of processes to use for the preprocessing."},
     )
-    keep_linebreaks: bool = field(
-        default=True, metadata={"help": "Whether to keep line breaks when using TXT files or not."}
-    )
+
     ignore_pad_token_for_loss: bool = field(
         default=True,
         metadata={
@@ -317,12 +293,7 @@ class DataTrainingArguments:
             "help": "Use prefix language model, especially for models like MPT."
         },
     )
-    few_shot_eval_path: str = field(
-        default="",
-        metadata={
-            "help": "The path for few show evaluation"
-        },
-    )
+
     use_target_lang_prompt_eval: bool = field(
         default=False,
         metadata={
@@ -336,32 +307,25 @@ class DataTrainingArguments:
             "help": "Usung interleave to concatenate datasets, with probabilities of p1,p2,p3,..., splited by commas"
         },
     )
-    suffix_eval_file: str = field(
-        default="",
-        metadata={
-            "help": "The suffix for the eval file: test-src-tgt'suffix_eval_file'"
-        },
-    )
 
-    cpo_scorer: str = field(
-        default="xcomet_kiwi",
-        metadata={
-            "help": "The scorer of CPO, e.g., using xcomet, kiwi, or both of them (xcomet-kiwi) for CPO training"
-        },
-    )
     trans_task: str = field(
-        default="general_trans"
+        default="general_trans",
+        metadata={
+            "help": "train task"
+        },
     )
     predict_task: str = field(
-        default="general_trans"
+        default="general_trans",
+        metadata={
+            "help": "train task"
+        },
     )
     test_dataname: str = field(
-        default=""
+        default=None,
+        metadata={
+            "help": "Use for general_trans, support wmt23, wmt22, flores"
+        },
     )
-
-
-    # predict_source_lang: str = field(default="", metadata={"help": "The source language for testing"})
-    # predict_target_lang: str = field(default="en", metadata={"help": "The target language for testing"})
 
     suffix: Optional[str] = field(default="", metadata={"help": "The suffix of the training file."})
 
@@ -410,9 +374,8 @@ def main():
 
     # load and set special token id of tokenizer
     tokenizer = load_tokenizer(data_args, model_args, training_args, logger)
-     # Load model
+    # Load model
     model = load_model(data_args, model_args, training_args, tokenizer, logger)
-    print(model)
     # exit()
 
     # Get the datasets
@@ -427,7 +390,6 @@ def main():
         train_raw_data, valid_raw_data, test_raw_data = load_mmt_dataset(pairs, trans_task, data_args, model_args, training_args, logger)
         train_datasets, eval_datasets, test_datasets = process_mmt_data_for_llm(train_raw_data, valid_raw_data, test_raw_data, pairs, tokenizer, data_args, training_args)
 
-    
     if data_args.mono_data_path:
         train_raw_data = load_dataset(
             "json",

@@ -9,10 +9,10 @@ export HF_DATASETS_OFFLINE=1
 
 config_file=./configs/accelerate_config_8gpu.yaml
 
-language_pairs=bn-en,en-it,en-ps,en-kk,en-sv,en-ky,en-wa,en-lv,en-ka,en-nn,en-si,en-or,az-en,en-ha,de-en,en-th,en-mt,en-he,en-oc,en-ur,en-ku,en-xh,en-tr,en-gd,en-lt,cs-en,en-yi,en-eu,en-kn,en-nb,en-es,en-te,en-hi,en-zh,el-en,en-id,en-fy,br-en,en-uk,en-gl,en-mk,en-sl,en-pl,as-en,en-pt,en-tg,en-ja,en-et,en-pa,en-my,ar-en,en-sk,en-fr,en-mr,en-mg,en-hu,bg-en,af-en,en-hr,en-fa,en-se,da-en,en-ga,en-ig,en-li,en-no,en-uz,en-rw,en-ml,en-gu,en-fi,be-en,en-ta,en-tk,en-ug,en-ne,am-en,en-ms,en-is,en-sr,en-sq,cy-en,en-tt,en-ru,en-vi,en-eo,en-km,bs-en,ca-en,en-sh,en-ro,en-zu,en-nl,en-ko
+language_pairs=nb-en,zh-en,dz-en,wa-en,ha-en,or-en,nl-en,hu-en,sv-en,ug-en,ko-en,ur-en,mn-en,yi-en,sk-en,mr-en,ja-en,is-en,tt-en,he-en,es-en,xh-en,kk-en,fi-en,gl-en,pl-en,ps-en,lt-en,id-en,vi-en,bs-en,eu-en,ku-en,sr-en,ca-en,tr-en,li-en,ml-en,hr-en,el-en,ig-en,ne-en,ru-en,mg-en,sh-en,af-en,mk-en,fy-en,be-en,fr-en,de-en,my-en,eo-en,lv-en,rw-en,bg-en,tg-en,zu-en,bn-en,mt-en,nn-en,ga-en,no-en,et-en,gu-en,ta-en,cy-en,ms-en,kn-en,as-en,br-en,yo-en,se-en,uz-en,gd-en,az-en,hy-en,uk-en,sq-en,te-en,da-en,si-en,am-en,tk-en,fa-en,cs-en,ka-en,ro-en,an-en,ky-en,oc-en,sl-en,pa-en,pt-en,th-en,it-en,ar-en,km-en,hi-en
 # language_pairs=de-en,cs-en,ru-en,zh-en
 
-mmt_data_path=$ROOT_DIR/data/opus
+mmt_data_path=$ROOT_DIR/data/opus-flores
 trans_task="general_trans"
 
 eval_models=(

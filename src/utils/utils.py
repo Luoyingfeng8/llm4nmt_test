@@ -184,42 +184,64 @@ LANG_TABLE = {
     "zu": "Zulu",
 }
 
+# task_prompt = {
+#     "general_trans":[
+#         "Translate the following text from {src_lang} into {tgt_lang}.\n{src_lang}: {src}"
+#     ],
+#     "doc_trans":[
+#         "Translate the following long text from {src_lang} into {tgt_lang}.\n{src_lang}: {src}"
+#     ],
+#     "domain_medical":[
+#         "Translate the following medical text from {src_lang} into {tgt_lang}.\n{src_lang}: {src}"
+#     ],
+#     "domain_law":[
+#         "Translate the following legal text from {src_lang} into {tgt_lang}.\n{src_lang}: {src}"
+#     ],
+#     "domain_literature":[
+#         "Translate the following literary text from {src_lang} into {tgt_lang}.\n{src_lang}: {src}"
+#     ],
+#     "domain_colloquial":[
+#         "Translate the following colloquial text from {src_lang} into {tgt_lang}.\n{src_lang}: {src}"
+#     ],
+#     "domain_it":[
+#         "Translate the following information technology-related text from {src_lang} into {tgt_lang}.\n{src_lang}: {src}"
+#     ],
+#     "term_con_trans": [
+#         "Translate the following text from {src_lang} into {tgt_lang} using the provided terminology pairs, ensuring the specified terms are accurately translated as indicated.\nTerminology pairs: {term_text}\n{src_lang}: {src}"
+#     ],
+#     "ape": [
+#         "Improve the following machine-generated translation from {src_lang} to {tgt_lang}. Correct errors and generate a more accurate translation.\n{src_lang}: {src}\nMachine translation: {mt_text}"
+#     ]
+# }
+
+
 task_prompt = {
     "general_trans":[
         "Translate the following text from {src_lang} into {tgt_lang}.\n{src_lang}: {src}"
     ],
     "doc_trans":[
-        "Translate the following text from {src_lang} into {tgt_lang}. Ensure the translation is consistent, coherent, and follows the original style, tone.\n{src_lang}: {src}"
+        "Translate the following text from {src_lang} into {tgt_lang}.\n{src_lang}: {src}"
     ],
     "domain_medical":[
-        "Translate the following medical text from {src_lang} into {tgt_lang}. Ensure the translation maintains accuracy in medical terminology, consistency in style.\n{src_lang}: {src}"
+        "Translate the following text from {src_lang} into {tgt_lang}.\n{src_lang}: {src}"
     ],
     "domain_law":[
-        "Translate the following law text from {src_lang} into {tgt_lang}. Ensure the translation maintains accuracy in legal terminology, consistency in style.\n{src_lang}: {src}"
+        "Translate the following text from {src_lang} into {tgt_lang}.\n{src_lang}: {src}"
     ],
     "domain_literature":[
-        "Translate the following literary text from {src_lang} into {tgt_lang}. Preserve the original style, tone, and cultural nuances to maintain the artistic integrity.\n{src_lang}: {src}"
+        "Translate the following text from {src_lang} into {tgt_lang}.\n{src_lang}: {src}"
     ],
-    "domain_finance":[
-        "Translate the following financial and economic text from {src_lang} into {tgt_lang}. Ensure the translation maintains original style and ensure terminological precision.\n{src_lang}: {src}"
+    "domain_colloquial":[
+        "Translate the following text from {src_lang} into {tgt_lang}.\n{src_lang}: {src}"
     ],
-    "domain_social_media":[
-        "Translate the following social media text from {src_lang} into {tgt_lang}. The content may include informal language and potential noise. Ensure accuracy while maintaining the original style.\n{src_lang}: {src}"
-    ],
-    "domain_computer":[
-        "Translate the following information technology text from {src_lang} into {tgt_lang}. Ensure the translation maintains original style and ensure terminological precision.\n{src_lang}: {src}"
+    "domain_it":[
+        "Translate the following text from {src_lang} into {tgt_lang}.\n{src_lang}: {src}"
     ],
     "term_con_trans": [
-        "Translate the following text from {src_lang} into {tgt_lang} using the provided terminology pairs. Ensure that the specified terms are accurately translated as indicated.\nTerminology pairs: {term_text}\n{src_lang}: {src}"
+        "Translate the following text from {src_lang} into {tgt_lang} using the provided terminology pairs, ensuring the specified terms are accurately translated as indicated.\nTerminology pairs: {term_text}\n{src_lang}: {src}"
     ],
     "ape": [
-        "Improve the following machine-translated text from {src_lang} into {tgt_lang}. Adjust grammar, style, and coherence to enhance readability.\n{src_lang}: {src}\nMachine translation: {mt_text}"
-    ],
-    "context_aware_trans": [
-        "Translate the following text from from {src_lang} into {tgt_lang} using the provided context for better accuracy and coherence.\nContext: {src_context}\n{src_lang}: {src}"
-    ],
-    "context_learning_trans": [
-        "Translate the following text from {src_lang} into {tgt_lang}.\n{shot_text}\n{src_lang}: {src}"
+        "Improve the following machine-generated translation from {src_lang} to {tgt_lang}. Correct errors and generate a more accurate translation.\n{src_lang}: {src}\n{tgt_lang}: {mt_text}"
     ]
 }
 
@@ -648,8 +670,10 @@ def get_prompt(source_lang, target_lang, example):
     src_fullname = LANG_TABLE[source_lang]
     tgt_fullname = LANG_TABLE[target_lang]
     task_type = example["task_type"]
-
-    prefix_temp = random.choice(task_prompt[task_type])
+    
+    if task_type != "context_learning_trans":
+        prefix_temp = random.choice(task_prompt[task_type])
+    
     if task_type == "doc_trans":
         src_text, tgt_txt = " ".join(example["translation"][source_lang]), " ".join(example["translation"][target_lang]) 
         prefix = prefix_temp.format(src_lang=src_fullname, tgt_lang=tgt_fullname, src=src_text)
@@ -661,15 +685,12 @@ def get_prompt(source_lang, target_lang, example):
     elif task_type == "ape":
         src_text, tgt_txt, mt_text = example["translation"][source_lang], example["translation"][target_lang], example["mt_gen"]
         prefix = prefix_temp.format(src_lang=src_fullname, tgt_lang=tgt_fullname, src=src_text, mt_text=mt_text)
-    elif task_type == "context_aware_trans":
-        src_text, tgt_txt, src_context = example["translation"][source_lang], example["translation"][target_lang], " ".join(example["src_context"])
-        prefix = prefix_temp.format(src_lang=src_fullname, tgt_lang=tgt_fullname, src=src_text, src_context=src_context)
     # don't need instruction
     elif task_type == "context_learning_trans": 
         meta_task = example["meta_task"]
         shots = example["shots"]
         if meta_task == "term_con_trans":
-            context = ""
+            context = f"Translate the following text from {src_fullname} into {tgt_fullname} using the provided terminology pairs, ensuring the specified terms are accurately translated as indicated.\n"
             for shot in shots:
                 src_text, tgt_txt, hints = shot["translation"][source_lang], shot["translation"][target_lang], shot["hints"]
                 hints = [f"{x[source_lang]} = {x[target_lang]}" for x in hints]
@@ -680,21 +701,14 @@ def get_prompt(source_lang, target_lang, example):
             hint_text = "; ".join(hints)
             prefix = context +  f"Terminology pairs: {hint_text}\n{src_fullname}: {src_text}"
         elif meta_task == "ape":
-            context = ""
+            context = f"Improve the following machine-generated translation from {src_fullname} to {tgt_fullname}. Correct errors and generate a more accurate translation.\n"
             for shot in shots:
                 src_text, tgt_txt, mt_text = shot["translation"][source_lang], shot["translation"][target_lang], shot["mt_gen"]
                 context += f"{src_fullname}: {src_text}\nMachine translation: {mt_text}\nImproved translation: {tgt_txt}\n\n"
             src_text, tgt_txt, mt_text = example["translation"][source_lang], example["translation"][target_lang], example["mt_gen"]
             prefix = context +  f"{src_fullname}: {src_text}\nMachine translation: {mt_text}"
-        elif meta_task == "context_aware_trans":
-            context = ""
-            for shot in shots:
-                src_text, tgt_txt, src_context = shot["translation"][source_lang], shot["translation"][target_lang], " ".join(shot["src_context"]) 
-                context += f"Context: {src_context}\n{src_fullname}: {src_text}\n{tgt_fullname}: {tgt_txt}\n\n"
-            src_text, tgt_txt, src_context = example["translation"][source_lang], example["translation"][target_lang], " ".join(example["src_context"])
-            prefix = context + f"Context: {src_context}\n{src_fullname}: {src_text}"
         else:
-            context = ""
+            context = f"Translate the following text from {src_fullname} into {tgt_fullname}.\n"
             for shot in shots:
                 src_text, tgt_txt = shot["translation"][source_lang], shot["translation"][target_lang]
                 context += f"{src_fullname}: {src_text}\n{tgt_fullname}: {tgt_txt}\n\n"
@@ -705,7 +719,7 @@ def get_prompt(source_lang, target_lang, example):
         src_text, tgt_txt = example["translation"][source_lang], example["translation"][target_lang]
         prefix = prefix_temp.format(src_lang=src_fullname, tgt_lang=tgt_fullname, src=src_text)
     
-    if task_type == "ape":
+    if task_type == "ape" or (task_type == "context_learning_trans" and meta_task == "ape"):
         suffix = "\nImproved translation: "
     else:
         suffix = f"\n{tgt_fullname}: "
@@ -963,6 +977,7 @@ def load_model(data_args, model_args, training_args, tokenizer, logger):
         print_trainable_parameters(model)
 
     model = set_model_special_tokens(model, model_args.model_name_or_path)
+    logger.info(model)
     return model
 
 
@@ -1022,8 +1037,8 @@ def train_lora_model(model, model_args, config):
     return model
 
 def do_data_reverse(pairs, example):
-    direc_tasks = ["ape", "context_aware_trans"]
-    direc_data_names = ["wmt19_robustness", "wmt20_robustness", "IdiomsInCtx-MT", "PETCI"]
+    direc_tasks = ["ape"]
+    direc_data_names = ["wmt19_robustness", "wmt20_robustness"]
     source_lang, target_lang, task_type, data_name = example["src_lang"], example["tgt_lang"], example["task_type"],  example["data_name"]
     flag = True
     if f"{target_lang}-{source_lang}" not in pairs or task_type in direc_tasks:

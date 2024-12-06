@@ -168,16 +168,14 @@ def apply_prompt_json_direct(args, src_fullname, tgt_fullname, tokenizer):
 
 # for chat version model
 task_prompts = {
-    "doc_trans": "Translate the following document text from {src_lang} to {tgt_lang}. Ensure the translation is consistent, coherent, and follows the original style. Do not provide any explanations or text apart from the translation.\n{src_lang}: {src}",
-    "domain_medical": "Translate the following medical text from {src_lang} to {tgt_lang}. Maintain the original style and use the correct medical terms. Do not provide any explanations or text apart from the translation.\n{src_lang}: {src}",
-    "domain_law": "Translate the following legal text from {src_lang} to {tgt_lang}. Preserve the original style and use precise legal terminology. Do not provide any explanations or text apart from the translation.\n{src_lang}: {src}",
-    "domain_finance": "Translate the following financial text from {src_lang} to {tgt_lang}. Keep the original style and use precise financial terms. Do not provide any explanations or text apart from the translation.\n{src_lang}: {src}",
-    "domain_computer": "Translate the following information technology text from {src_lang} to {tgt_lang}. Maintain the original style and ensure accurate terminology. Do not provide any explanations or text apart from the translation.\n{src_lang}: {src}",
-    "domain_literature": "Translate the following literature text from {src_lang} to {tgt_lang}. Preserve the original style, tone, and cultural nuances. Do not provide any explanations or text apart from the translation.\n{src_lang}: {src}",
-    "domain_social_media": "Translate the following social media text from {src_lang} to {tgt_lang}. Content may be informal. Ensure accuracy and maintain the original style. Do not provide any explanations or text apart from the translation.\n{src_lang}: {src}",
+    "doc_trans": "Translate the following long text from {src_lang} into {tgt_lang}. Do not provide any explanations or text apart from the translation.\n{src_lang}: {src}",
+    "domain_medical": "Translate the following medical text from {src_lang} to {tgt_lang}. Do not provide any explanations or text apart from the translation.\n{src_lang}: {src}",
+    "domain_law": "Translate the following legal text from {src_lang} to {tgt_lang}. Do not provide any explanations or text apart from the translation.\n{src_lang}: {src}",
+    "domain_it": "Translate the following information technology-related text from {src_lang} to {tgt_lang}. Do not provide any explanations or text apart from the translation.\n{src_lang}: {src}",
+    "domain_literature": "Translate the following literary text from {src_lang} to {tgt_lang}. Do not provide any explanations or text apart from the translation.\n{src_lang}: {src}",
+    "domain_colloquial": "Translate the following colloquial text from {src_lang} to {tgt_lang}. Do not provide any explanations or text apart from the translation.\n{src_lang}: {src}",
     "term_con_trans": "Translate the following text from {src_lang} into {tgt_lang} using the provided terminology pairs. Ensure the specified terms are accurately translated as indicated. Do not provide any explanations or text apart from the translation.\nTerminology pairs: {term_text}\n{src_lang}: {src}",
-    "ape": "Improve the following machine-translated text from {src_lang} into {tgt_lang}. Review and correct errors in the machine-translated text to enhance its accuracy, readability, and coherence. Do not provide any explanations or text apart from the translation.\n{src_lang}: {src}\nMachine translation: {mt_text}",
-    "context_aware_trans": "{src_context}\nTranslate the following text from {src_lang} to {tgt_lang}. Use the above context to enhance accuracy and coherence. Ensure the translation is contextually appropriate. Do not provide any explanations or text apart from the translation.\n{src_lang}: {src}"
+    "ape": "Improve the following machine-generated translation from {src_lang} to {tgt_lang}. Correct errors and generate a more accurate translation. Do not provide any explanations or text apart from the translation.\n{src_lang}: {src}\nMachine translation: {mt_text}",
 }
 
 def apply_prompt_json(args, task_type, src_fullname, tgt_fullname, tokenizer):
