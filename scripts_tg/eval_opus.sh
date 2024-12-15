@@ -17,7 +17,7 @@ for filename in `ls $decode_dir`; do
     fi
 
     hypo_file=$decode_dir/$filename
-    ref_file=$ROOT_DIR/data/opus-flores/$first_lang-en/test.$lang_pair.general_trans.$tgt
+    ref_file=$ROOT_DIR/data/opus-flores/$first_lang-en/test.$lang_pair.general_trans.$tgt.txt
     
 
     cur_time=`date +"%Y-%m-%d %H:%M:%S"`

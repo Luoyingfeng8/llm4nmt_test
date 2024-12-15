@@ -32,7 +32,7 @@ import numpy as np
 import copy
 from utils import utils
 from utils import ul2collator
-from utils.utils import load_mmt_dataset, process_mmt_data_for_enc_dec, print_trainable_parameters, load_tokenizer
+from utils.utils import load_mmt_dataset, process_mmt_data_for_seq2seq, print_trainable_parameters, load_tokenizer
 
 
 import transformers
@@ -315,7 +315,7 @@ class DataTrainingArguments:
         default="general_trans"
     )
     test_dataname: str = field(
-        default="wmt23"
+        default=""
     )
 
     def __post_init__(self):
@@ -629,7 +629,7 @@ def main():
     shots_eval_dict = {}
     if data_args.mmt_data_path is not None:
         train_raw_data, valid_raw_data, test_raw_data = load_mmt_dataset(pairs, trans_task, data_args, model_args, training_args, logger)
-        train_datasets, eval_datasets, test_datasets = process_mmt_data_for_enc_dec(train_raw_data, valid_raw_data, test_raw_data, pairs, tokenizer, shots_eval_dict, data_args, training_args)
+        train_datasets, eval_datasets, test_datasets = process_mmt_data_for_seq2seq(train_raw_data, valid_raw_data, test_raw_data, pairs, tokenizer, shots_eval_dict, data_args, training_args, model_args)
 
     if training_args.label_smoothing_factor > 0 and not hasattr(model, "prepare_decoder_input_ids_from_labels"):
         logger.warning(
@@ -722,13 +722,16 @@ def main():
         for lg_pair in lg_pairs:
             cur_test_dataset = test_datasets[lg_pair]
             src_lang, tgt_lang = lg_pair.split("-")
-            for task in predict_tasks:
+            for task in cur_test_dataset.keys():
+                if task not in predict_tasks:
+                    logger.info(f"skip predict {lg_pair}.{task}")
+                    continue
                 task_test_dataset = cur_test_dataset[task]
                 start = time.time()
                 logger.info(f"*** Prediction for {lg_pair}.{task} ***")
                 
                 ##### test only
-                task_test_dataset = task_test_dataset.select(range(20)) 
+                # task_test_dataset = task_test_dataset.select(range(20)) 
 
                 predict_results = trainer.predict(
                     task_test_dataset, 

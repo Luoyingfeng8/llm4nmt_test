@@ -31,7 +31,7 @@ def comet22_scoring(src_file, ref_file, hypo_file, model):
     assert len(srcs) == len(refs) == len(hypos), print(src_file, ref_file, hypo_file)
     data = [{"src":x, "mt":y, "ref":z} for x,y,z in zip(srcs, hypos, refs)]
     print(f"comet22\nsrc_file: {src_file}\nref_file: {ref_file}\nhypo_file: {hypo_file}")
-    model_output = model.predict(data, batch_size=64, gpus=1)
+    model_output = model.predict(data, batch_size=256, gpus=1)
     score = round(model_output[1]*100, 2)
     return score
 

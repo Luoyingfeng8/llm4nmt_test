@@ -431,21 +431,21 @@ def load_mmt_dataset(pairs, trans_task, data_args, model_args, training_args, lo
             # test_file may have multi test dataset
             if task == "general_trans":
                 if data_args.test_dataname == "wmt23":
-                    test_files = glob.glob(os.path.join(data_args.mmt_data_path, pair_dir, f"test.{src_lang}-{tgt_lang}.{task}.wmt23*json"))
+                    test_files = glob.glob(os.path.join(data_args.mmt_data_path, pair_dir, f"test.{pair}.{task}.wmt23*json"))
                 elif data_args.test_dataname == "wmt22":
-                    test_files = glob.glob(os.path.join(data_args.mmt_data_path, pair_dir, f"test.{src_lang}-{tgt_lang}.{task}.wmt22*json"))
+                    test_files = glob.glob(os.path.join(data_args.mmt_data_path, pair_dir, f"test.{pair}.{task}.wmt22*json"))
                 elif data_args.test_dataname == "flores":
-                    test_files = glob.glob(os.path.join(data_args.mmt_data_path, pair_dir, f"test.{src_lang}-{tgt_lang}.{task}.FLORES-200*json"))
+                    test_files = glob.glob(os.path.join(data_args.mmt_data_path, pair_dir, f"test.{pair}.{task}.FLORES-200*json"))
                 else:
-                    test_files = glob.glob(os.path.join(data_args.mmt_data_path, pair_dir, f"test.{src_lang}-{tgt_lang}.{task}*json"))
+                    test_files = glob.glob(os.path.join(data_args.mmt_data_path, pair_dir, f"test.{pair}.{task}*json"))
             else:
-                test_files = glob.glob(os.path.join(data_args.mmt_data_path, pair_dir, f"test.{src_lang}-{tgt_lang}.{task}*json"))
+                test_files = glob.glob(os.path.join(data_args.mmt_data_path, pair_dir, f"test.{pair}.{task}*json"))
 
             if test_files:
                 test_file = test_files[0]
             else:
                 # fake file for logger
-                test_file = os.path.join(data_args.mmt_data_path, pair_dir, f"fake.test.{src_lang}-{tgt_lang}.{task}.json")
+                test_file = f"test.{pair}.{task}.json"
             
             if not os.path.isfile(train_file):
                 logger.info(f"Warning: training file {train_file} does not exist!")
@@ -578,7 +578,7 @@ def get_prompt_old(source_lang, target_lang, examples, i, shots_eval_dict={}, us
         # use the first prompt defaultly
         prefix_temp = task_prompt[task_type][0]
         if task_type == "doc_trans":
-            src_text, tgt_txt = " ".join(examples["translation"][i][source_lang]), " ".join(examples["translation"][i][target_lang]) 
+            src_text, tgt_txt = examples["translation"][i][source_lang], examples["translation"][i][target_lang] 
             prefix = prefix_temp.format(src_lang=src_fullname, tgt_lang=tgt_fullname, src=src_text)
         elif  task_type == "term_con_trans":
             src_text, tgt_txt, hints = examples["translation"][i][source_lang], examples["translation"][i][target_lang], examples["hints"][i]
@@ -588,9 +588,6 @@ def get_prompt_old(source_lang, target_lang, examples, i, shots_eval_dict={}, us
         elif task_type == "ape":
             src_text, tgt_txt, mt_text = examples["translation"][i][source_lang], examples["translation"][i][target_lang], examples["mt_gen"][i]
             prefix = prefix_temp.format(src_lang=src_fullname, tgt_lang=tgt_fullname, src=src_text, mt_text=mt_text)
-        elif task_type == "context_aware_trans":
-            src_text, tgt_txt, src_context = examples["translation"][i][source_lang], examples["translation"][i][target_lang], " ".join(examples["src_context"][i])
-            prefix = prefix_temp.format(src_lang=src_fullname, tgt_lang=tgt_fullname, src=src_text, src_context=src_context)
         # don't need instruction
         elif task_type == "context_learning_trans": 
             meta_task = examples["meta_task"][i]
@@ -613,13 +610,6 @@ def get_prompt_old(source_lang, target_lang, examples, i, shots_eval_dict={}, us
                     context += f"{src_fullname}: {src_text}\nMachine translation: {mt_text}\nImproved translation: {tgt_txt}\n\n"
                 src_text, tgt_txt, mt_text = examples["translation"][i][source_lang], examples["translation"][i][target_lang], examples["mt_gen"][i]
                 prefix = context +  f"{src_fullname}: {src_text}\nMachine translation: {mt_text}"
-            elif meta_task == "context_aware_trans":
-                context = ""
-                for shot in shots:
-                    src_text, tgt_txt, src_context = shot["translation"][source_lang], shot["translation"][target_lang], " ".join(shot["src_context"]) 
-                    context += f"Context: {src_context}\n{src_fullname}: {src_text}\n{tgt_fullname}: {tgt_txt}\n\n"
-                src_text, tgt_txt, src_context = examples["translation"][i][source_lang], examples["translation"][i][target_lang], " ".join(examples["src_context"][i])
-                prefix = context + f"Context: {src_context}\n{src_fullname}: {src_text}"
             else:
                 context = ""
                 for shot in shots:
@@ -675,7 +665,7 @@ def get_prompt(source_lang, target_lang, example):
         prefix_temp = random.choice(task_prompt[task_type])
     
     if task_type == "doc_trans":
-        src_text, tgt_txt = " ".join(example["translation"][source_lang]), " ".join(example["translation"][target_lang]) 
+        src_text, tgt_txt = example["translation"][source_lang], example["translation"][target_lang]
         prefix = prefix_temp.format(src_lang=src_fullname, tgt_lang=tgt_fullname, src=src_text)
     elif task_type == "term_con_trans":
         src_text, tgt_txt, hints = example["translation"][source_lang], example["translation"][target_lang], example["hints"]
@@ -734,7 +724,7 @@ def get_prompt_direct_llm(source_lang, target_lang, example):
 
     prefix_temp = task_prompt["general_trans"][0]
     if task_type == "doc_trans":
-        src_text, tgt_txt = " ".join(example["translation"][source_lang]), " ".join(example["translation"][target_lang]) 
+        src_text, tgt_txt = example["translation"][source_lang], example["translation"][target_lang]
         prefix = prefix_temp.format(src_lang=src_fullname, tgt_lang=tgt_fullname, src=src_text)
     # normal translation task
     else:
@@ -1070,15 +1060,15 @@ def process_mmt_data_for_seq2seq(train_raw_data, valid_raw_data, test_raw_data, 
 
     def tokenize_train_eval_for_seq2seq(examples):
         inputs, targets = [], []
-        src_langs, tgt_langs, task_types, data_names = examples["src_lang"], examples["tgt_lang"], examples["task_type"],  examples["data_name"]
-        for i, item in enumerate(zip(src_langs, tgt_langs, task_types, data_names)):
-            source_lang, target_lang, task_type, data_name = item
+        examples = [{key: value for key, value in zip(examples.keys(), values)} for values in zip(*examples.values())]   
+        for example in examples:
+            source_lang, target_lang = example["src_lang"], example["tgt_lang"]
             if f"{source_lang}-{target_lang}" in pairs:                
-                prompt, tgt_txt = get_prompt_old(source_lang, target_lang, examples, i, architecture=model_args.architecture)
+                prompt, tgt_txt = get_prompt(source_lang, target_lang, example)
                 inputs.append(prompt)
                 targets.append(tgt_txt)
-            if do_data_reverse_old(pairs, examples, i):
-                prompt, tgt_txt = get_prompt_old(target_lang, source_lang, examples, i, architecture=model_args.architecture)
+            if do_data_reverse(pairs, example):
+                prompt, tgt_txt = get_prompt(target_lang, source_lang, example)
                 inputs.append(prompt)
                 targets.append(tgt_txt)
         # print(("\n\n"+"="*100+"\n\n").join([f"{x}\n{y}" for x,y in zip(inputs, targets)]))
@@ -1094,11 +1084,11 @@ def process_mmt_data_for_seq2seq(train_raw_data, valid_raw_data, test_raw_data, 
     def tokenize_test_for_seq2seq(examples):
         prompts = []
         targets = []
-        src_langs, tgt_langs, task_types, data_names = examples["src_lang"], examples["tgt_lang"], examples["task_type"],  examples["data_name"]
-        for i, item in enumerate(zip(src_langs, tgt_langs, task_types, data_names)):
-            source_lang, target_lang, task_type, data_name = item
+        examples = [{key: value for key, value in zip(examples.keys(), values)} for values in zip(*examples.values())]   
+        for example in examples:
+            source_lang, target_lang = example["src_lang"], example["tgt_lang"]
             if f"{source_lang}-{target_lang}" in pairs:
-                prompt, tgt_txt = get_prompt_old(source_lang, target_lang, examples, i, shots_eval_dict, data_args.use_target_lang_prompt_eval, architecture=model_args.architecture)
+                prompt, tgt_txt = get_prompt(source_lang, target_lang, example)
                 # prompt, tgt_txt = get_prompt_direct(source_lang, target_lang, examples, i, shots_eval_dict, data_args.use_target_lang_prompt_eval, architecture=model_args.architecture)
                 prompts.append(prompt)
                 targets.append(tgt_txt)

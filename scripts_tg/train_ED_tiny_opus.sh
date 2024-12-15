@@ -31,13 +31,12 @@ tag=${encoder_method}_E${encoder_layer_num}_D${decoder_layer_num}_d${decoder_hid
 
 ## data
 # language_pairs=de-en,en-de,zh-en,en-zh
-language_pairs=de-en,en-de,cs-en,en-cs,ru-en,en-ru,zh-en,en-zh
-mmt_data_path=$ROOT_DIR/data/wmt23-sample/wmt23-sample10M
-# mmt_data_path=/mnt/luoyingfeng/llm4nmt/data/wmt23-sample5M
+language_pairs=nb-en,zh-en,dz-en,wa-en,ha-en,or-en,nl-en,hu-en,sv-en,ug-en,ko-en,ur-en,mn-en,yi-en,sk-en,mr-en,ja-en,is-en,tt-en,he-en,es-en,xh-en,kk-en,fi-en,gl-en,pl-en,ps-en,lt-en,id-en,vi-en,bs-en,eu-en,ku-en,sr-en,ca-en,tr-en,li-en,ml-en,hr-en,el-en,ig-en,ne-en,ru-en,mg-en,sh-en,af-en,mk-en,fy-en,be-en,fr-en,de-en,my-en,eo-en,lv-en,rw-en,bg-en,tg-en,zu-en,bn-en,mt-en,nn-en,ga-en,no-en,et-en,gu-en,ta-en,cy-en,ms-en,kn-en,as-en,br-en,yo-en,se-en,uz-en,gd-en,az-en,hy-en,uk-en,sq-en,te-en,da-en,si-en,am-en,tk-en,fa-en,cs-en,ka-en,ro-en,an-en,ky-en,oc-en,sl-en,pa-en,pt-en,th-en,it-en,ar-en,km-en,hi-en
+mmt_data_path=$ROOT_DIR/data/opus-flores
 trans_task="general_trans"
 epoch=1
 batch_size=32 
-gradient_accumulation=10
+gradient_accumulation=8
 
 ## save
 output_dir=$ROOT_DIR/exps/$model_name/$tag
@@ -59,7 +58,6 @@ accelerate launch --config_file $config_file $ROOT_DIR/src/run_translation.py \
     --decoder_param_method ${decoder_param_method:-"share"} \
     --mmt_data_path $mmt_data_path \
     --trans_task $trans_task \
-    --test_dataname wmt23 \
     --language_pairs $language_pairs \
     --use_fast_tokenizer \
     --do_eval \
@@ -87,9 +85,9 @@ accelerate launch --config_file $config_file $ROOT_DIR/src/run_translation.py \
     --evaluation_strategy steps \
     --save_strategy steps \
     --logging_strategy steps \
-    --eval_steps  1000 \
-    --save_steps 1000 \
-    --logging_steps  50 \
+    --eval_steps  5000 \
+    --save_steps 5000 \
+    --logging_steps  10 \
     --save_total_limit  5 \
     --fp16 \
     --seed 42 \
@@ -98,4 +96,4 @@ accelerate launch --config_file $config_file $ROOT_DIR/src/run_translation.py \
    | tee $output_dir/train.log
     
 
- bash ./eval_multi_new.sh  $output_dir/decode_result 
+ bash ./eval_opus.sh  $output_dir/decode_result 

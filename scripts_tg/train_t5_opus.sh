@@ -7,7 +7,7 @@ export HF_DATASETS_CACHE="./cache/huggingface_cache/datasets"
 export HF_EVALUATE_OFFLINE=1
 export HF_DATASETS_OFFLINE=1
 
-config_file=./configs/accelerate_config_bf16.yaml
+config_file=./configs/accelerate_config_bf16_8gpu.yaml
 
 model_name=mt5-large
 model_dir=$ROOT_DIR/model_card/$model_name
@@ -51,9 +51,9 @@ accelerate launch --config_file $config_file $ROOT_DIR/src/run_translation.py \
     --max_target_length 256 \
     --num_train_epochs 1 \
     --patience 5 \
-    --per_device_train_batch_size 8 \
-    --per_device_eval_batch_size 8 \
-    --gradient_accumulation_steps 32 \
+    --per_device_train_batch_size 12 \
+    --per_device_eval_batch_size 12 \
+    --gradient_accumulation_steps 16 \
     --evaluation_strategy steps \
     --save_strategy steps \
     --logging_strategy steps \
