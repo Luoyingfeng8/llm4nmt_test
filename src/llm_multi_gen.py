@@ -168,15 +168,16 @@ def apply_prompt_json_direct(args, src_fullname, tgt_fullname, tokenizer):
 
 # for chat version model
 task_prompts = {
-    "doc_trans": "Translate the following long text from {src_lang} into {tgt_lang}. Do not provide any explanations or text apart from the translation.\n{src_lang}: {src}",
-    "domain_medical": "Translate the following medical text from {src_lang} to {tgt_lang}. Do not provide any explanations or text apart from the translation.\n{src_lang}: {src}",
-    "domain_law": "Translate the following legal text from {src_lang} to {tgt_lang}. Do not provide any explanations or text apart from the translation.\n{src_lang}: {src}",
-    "domain_it": "Translate the following information technology-related text from {src_lang} to {tgt_lang}. Do not provide any explanations or text apart from the translation.\n{src_lang}: {src}",
-    "domain_literature": "Translate the following literary text from {src_lang} to {tgt_lang}. Do not provide any explanations or text apart from the translation.\n{src_lang}: {src}",
-    "domain_colloquial": "Translate the following colloquial text from {src_lang} to {tgt_lang}. Do not provide any explanations or text apart from the translation.\n{src_lang}: {src}",
-    "term_con_trans": "Translate the following text from {src_lang} into {tgt_lang} using the provided terminology pairs. Ensure the specified terms are accurately translated as indicated. Do not provide any explanations or text apart from the translation.\nTerminology pairs: {term_text}\n{src_lang}: {src}",
+    "doc_trans": "Translate the following text from {src_lang} into {tgt_lang}. Do not provide any explanations or text apart from the translation.\n{src_lang}: {src}",
+    "domain_medical": "Translate the following text from {src_lang} to {tgt_lang}. Do not provide any explanations or text apart from the translation.\n{src_lang}: {src}",
+    "domain_law": "Translate the following text from {src_lang} to {tgt_lang}. Do not provide any explanations or text apart from the translation.\n{src_lang}: {src}",
+    "domain_it": "Translate the following text from {src_lang} to {tgt_lang}. Do not provide any explanations or text apart from the translation.\n{src_lang}: {src}",
+    "domain_literature": "Translate the following text from {src_lang} to {tgt_lang}. Do not provide any explanations or text apart from the translation.\n{src_lang}: {src}",
+    "domain_colloquial": "Translate the following text from {src_lang} to {tgt_lang}. Do not provide any explanations or text apart from the translation.\n{src_lang}: {src}",
+    "term_con_trans": "Translate the following text from {src_lang} into {tgt_lang} using the provided terminology pairs, ensuring the specified terms are accurately translated as indicated. Do not provide any explanations or text apart from the translation.\nTerminology pairs: {term_text}\n{src_lang}: {src}",
     "ape": "Improve the following machine-generated translation from {src_lang} to {tgt_lang}. Correct errors and generate a more accurate translation. Do not provide any explanations or text apart from the translation.\n{src_lang}: {src}\nMachine translation: {mt_text}",
 }
+
 
 def apply_prompt_json(args, task_type, src_fullname, tgt_fullname, tokenizer):
     model_name_or_path = args.model_name_or_path
@@ -187,17 +188,11 @@ def apply_prompt_json(args, task_type, src_fullname, tgt_fullname, tokenizer):
         # prompt fixed model
         if "ALMA" in model_name_or_path or "gemma-2" in model_name_or_path:
             prefix = "Translate this from {src_fullname} to {tgt_fullname}:\n{src_fullname}: {src}\n{tgt_fullname}:"
-            if task_type == "doc_trans":
-                src_text = " ".join(line["translation"][src_lang])
-            else:
-                src_text = line["translation"][src_lang]
+            src_text = line["translation"][src_lang]
             prompt = prefix.format(src_fullname=src_fullname, tgt_fullname=tgt_fullname, src=src_text)
             res.append(prompt)
         elif "Tower" in model_name_or_path or "aya-23" in model_name_or_path:
-            if task_type == "doc_trans":
-                src_text = " ".join(line["translation"][src_lang])
-                prompt = task_prompts[task_type].format(src_lang=src_fullname, tgt_lang=tgt_fullname, src=src_text)
-            elif task_type == "term_con_trans":
+            if task_type == "term_con_trans":
                 src_text, hints = line["translation"][src_lang], line["hints"]
                 hints = [f"{x[src_lang]} = {x[tgt_lang]}" for x in hints]
                 hint_text = " ; ".join(hints)
@@ -205,9 +200,6 @@ def apply_prompt_json(args, task_type, src_fullname, tgt_fullname, tokenizer):
             elif task_type == "ape":
                 src_text, mt_text = line["translation"][src_lang], line["mt_gen"]
                 prompt = task_prompts[task_type].format(src_lang=src_fullname, tgt_lang=tgt_fullname, src=src_text, mt_text=mt_text)
-            elif task_type == "context_aware_trans":
-                src_text, src_context = line["translation"][src_lang], " ".join(line["src_context"])
-                prompt = task_prompts[task_type].format(src_lang=src_fullname, tgt_lang=tgt_fullname, src=src_text, src_context=src_context)
             else:
                 src_text = line["translation"][src_lang]
                 prompt = task_prompts[task_type].format(src_lang=src_fullname, tgt_lang=tgt_fullname, src=src_text)
@@ -220,11 +212,8 @@ def apply_prompt_json(args, task_type, src_fullname, tgt_fullname, tokenizer):
             )
             res.append(text)
         
-        elif "Meta-Llama-3.1" in model_name_or_path or "Meta-Llama-3-8B" in model_name_or_path:
-            if task_type == "doc_trans":
-                src_text = " ".join(line["translation"][src_lang])
-                prompt = task_prompts[task_type].format(src_lang=src_fullname, tgt_lang=tgt_fullname, src=src_text)
-            elif task_type == "term_con_trans":
+        elif "Meta-Llama-3.1-Instruct" in model_name_or_path or "Meta-Llama-3-8B-Instruct" in model_name_or_path:
+            if task_type == "term_con_trans":
                 src_text, hints = line["translation"][src_lang], line["hints"]
                 hints = [f"{x[src_lang]} = {x[tgt_lang]}" for x in hints]
                 hint_text = " ; ".join(hints)
@@ -232,9 +221,6 @@ def apply_prompt_json(args, task_type, src_fullname, tgt_fullname, tokenizer):
             elif task_type == "ape":
                 src_text, mt_text = line["translation"][src_lang], line["mt_gen"]
                 prompt = task_prompts[task_type].format(src_lang=src_fullname, tgt_lang=tgt_fullname, src=src_text, mt_text=mt_text)
-            elif task_type == "context_aware_trans":
-                src_text, src_context = line["translation"][src_lang], " ".join(line["src_context"])
-                prompt = task_prompts[task_type].format(src_lang=src_fullname, tgt_lang=tgt_fullname, src=src_text, src_context=src_context)
             else:
                 src_text = line["translation"][src_lang]
                 prompt = task_prompts[task_type].format(src_lang=src_fullname, tgt_lang=tgt_fullname, src=src_text)
@@ -249,10 +235,7 @@ def apply_prompt_json(args, task_type, src_fullname, tgt_fullname, tokenizer):
             )
             res.append(text)
         elif "nllb" in model_name_or_path:
-            if task_type == "doc_trans":
-                src_text = " ".join(line["translation"][src_lang])
-            else:
-                src_text = line["translation"][src_lang]
+            src_text = line["translation"][src_lang]
             res.append(src_text)
         else:
             print("Not support this model")

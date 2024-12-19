@@ -20,7 +20,7 @@ model_method="TinyCrossAttLW"
 # encoder_method="bidirectional"
 encoder_method="stack"
 encoder_layer_num=8
-decoder_layer_num=2
+decoder_layer_num=8
 decoder_hidden_size=1024
 decoder_intermediate_size=2752
 decoder_num_attention_heads=16
@@ -29,10 +29,11 @@ decoder_num_key_value_heads=16
 decoder_param_method="freeze"  # no use
 tag=${encoder_method}_E${encoder_layer_num}_D${decoder_layer_num}_d${decoder_hidden_size}_m2m_s2
 
-# language_pairs=de-en,cs-en,ru-en,zh-en
-language_pairs=de-en,en-de,cs-en,en-cs,ru-en,en-ru,zh-en,en-zh
-mmt_data_path=$ROOT_DIR/data/wmt-test-v8.28/v8.28
+language_pairs=en-zh
+# language_pairs=de-en,en-de,cs-en,en-cs,ru-en,en-ru,zh-en,en-zh
+mmt_data_path=$ROOT_DIR/data/v12.12
 trans_task="general_trans,doc_trans,domain_medical,domain_law,domain_finance,domain_computer,domain_literature,domain_social_media,term_con_trans,ape,context_aware_trans,context_learning_trans"
+predict_task="general_trans,doc_trans,domain_medical,domain_law,domain_it,domain_literature,domain_colloquial,term_con_trans,ape"
 
 
 # resume_from_checkpoint=/mnt/luoyingfeng/llm4nmt/exps/Meta-Llama-3-8B/stack_L8_D1024_m2m_s2/checkpoint-1269
@@ -56,6 +57,7 @@ accelerate launch --config_file $config_file $ROOT_DIR/src/run_translation.py \
     --decoder_param_method ${decoder_param_method:-"share"} \
     --mmt_data_path $mmt_data_path \
     --trans_task $trans_task \
+    --predict_task $predict_task \
     --test_dataname wmt23 \
     --language_pairs $language_pairs \
     --use_fast_tokenizer \
@@ -73,10 +75,10 @@ accelerate launch --config_file $config_file $ROOT_DIR/src/run_translation.py \
     --max_source_length 512 \
     --max_target_length 512 \
     --output_dir  $output_dir \
-    --num_train_epochs 1 \
+    --num_train_epochs 2 \
     --per_device_train_batch_size 4 \
     --per_device_eval_batch_size 4 \
-    --gradient_accumulation_steps 16 \
+    --gradient_accumulation_steps 8 \
     --predict_with_generate \
     --num_beams 5 \
     --max_new_tokens 512 \
@@ -94,4 +96,4 @@ accelerate launch --config_file $config_file $ROOT_DIR/src/run_translation.py \
    | tee $output_dir/train.log
     
 
- bash ./eval_multi_new.sh  $output_dir/decode_result 
+#  bash ./eval_multi_new_commt.sh  $output_dir/decode_result 

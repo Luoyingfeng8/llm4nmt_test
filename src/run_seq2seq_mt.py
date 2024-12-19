@@ -546,8 +546,7 @@ def main():
             model = LlamaConcatAttentionEncDec.from_pretrained(None, config=config, state_dict=state_dict, ignore_mismatched_sizes=True)
             model.set_share_paremeters()
         else:
-            model = LlamaConcatAttentionEncDec.from_pretrained(model_args.model_name_or_path, config=config)
-    
+            model = LlamaConcatAttentionEncDec.from_pretrained(model_args.model_name_or_path, config=config) 
     elif model_args.model_method == "TinyCrossAttLW":
         if model_args.run_mode == "init":
             # seting decoder config

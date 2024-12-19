@@ -30,14 +30,17 @@ decoder_param_method="freeze"
 tag=${encoder_method}_E${encoder_layer_num}_D${decoder_layer_num}_d${decoder_hidden_size}_m2m_s1
 
 ## data
-# language_pairs=de-en,en-de,zh-en,en-zh
-language_pairs=de-en,en-de,cs-en,en-cs,ru-en,en-ru,zh-en,en-zh
-mmt_data_path=$ROOT_DIR/data/wmt23-sample/wmt23-sample10M
+language_pairs=en-zh
+# language_pairs=de-en,en-de,cs-en,en-cs,ru-en,en-ru,zh-en,en-zh
+# mmt_data_path=$ROOT_DIR/data/wmt23-sample/wmt23-sample10M
+mmt_data_path=$ROOT_DIR/data/wmt23-zhen
 # mmt_data_path=/mnt/luoyingfeng/llm4nmt/data/wmt23-sample5M
 trans_task="general_trans"
-epoch=1
+predict_task="general_trans,doc_trans,domain_medical,domain_law,domain_it,domain_literature,domain_colloquial"
+
+epoch=2
 batch_size=32 
-gradient_accumulation=10
+gradient_accumulation=6
 
 ## save
 output_dir=$ROOT_DIR/exps/$model_name/$tag
@@ -59,6 +62,7 @@ accelerate launch --config_file $config_file $ROOT_DIR/src/run_translation.py \
     --decoder_param_method ${decoder_param_method:-"share"} \
     --mmt_data_path $mmt_data_path \
     --trans_task $trans_task \
+    --predict_task $predict_task \
     --test_dataname wmt23 \
     --language_pairs $language_pairs \
     --use_fast_tokenizer \
@@ -79,11 +83,11 @@ accelerate launch --config_file $config_file $ROOT_DIR/src/run_translation.py \
     --num_train_epochs $epoch \
     --patience 3 \
     --per_device_train_batch_size $batch_size \
-    --per_device_eval_batch_size $batch_size \
+    --per_device_eval_batch_size 4 \
     --gradient_accumulation_steps $gradient_accumulation \
     --predict_with_generate \
     --num_beams 5 \
-    --max_new_tokens 256 \
+    --max_new_tokens 512 \
     --evaluation_strategy steps \
     --save_strategy steps \
     --logging_strategy steps \
@@ -98,4 +102,4 @@ accelerate launch --config_file $config_file $ROOT_DIR/src/run_translation.py \
    | tee $output_dir/train.log
     
 
- bash ./eval_multi_new.sh  $output_dir/decode_result 
+#  bash ./eval_multi_new_commt.sh  $output_dir/decode_result 

@@ -23,8 +23,10 @@ ref_file_strs=""
 hypo_file_strs=""
 lang_pair_strs=""
 
-for l in de cs ru zh; do
-    for src in $l en; do
+# for l in de cs ru zh; do
+for l in zh; do
+    # for src in $l en; do
+    for src in en; do
     # for src in en; doeval_file
         if [ $src = "en" ]; then
             tgt=$l
@@ -40,8 +42,8 @@ for l in de cs ru zh; do
         lp=${src}2${tgt}
         # hypo_file=$decode_dir/test-$lang_pair${suffix:-""}
         hypo_file=$decode_dir/$lang_pair${suffix:-""}
-        src_file=$ROOT_DIR/data/wmt-test-v8.28/wmt-test-data/wmt${wmt_test_year}/wmt${wmt_test_year}-${l}en/test.$lp.$src
-        ref_file=$ROOT_DIR/data/wmt-test-v8.28/wmt-test-data/wmt${wmt_test_year}/wmt${wmt_test_year}-${l}en/test.$lp.$tgt	
+        src_file=$ROOT_DIR/data/v12.12_txt/zh-en/test.en-zh.general_trans.en.txt
+        ref_file=$ROOT_DIR/data/v12.12_txt/zh-en/test.en-zh.general_trans.zh.txt
         
         src_file_strs=${src_file_strs:+$src_file_strs,}$src_file
         ref_file_strs=${ref_file_strs:+$ref_file_strs,}$ref_file
